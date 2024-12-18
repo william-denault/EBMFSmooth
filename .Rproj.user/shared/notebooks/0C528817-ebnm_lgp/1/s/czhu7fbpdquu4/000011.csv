@@ -1,0 +1,7 @@
+"0","set.seed(123)"
+"0","n <- 100"
+"0","t <- seq(0, 4*pi, length = n)"
+"0","s <- c(rep(1.5,n/4), rep(0.5,n/4), rep(1,n/4), rep(2,n/4))"
+"0","f <- function(t) 2*sin(t)"
+"0","x <- f(t) + rnorm(n, 0, s)"
+"0","plot(t, x)"

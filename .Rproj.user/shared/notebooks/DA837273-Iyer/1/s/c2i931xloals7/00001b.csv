@@ -1,0 +1,5 @@
+"0","N <- nrow(Iyer_expression)"
+"0","input_pace <- MakeFPCAInputs(tVec = time_points, yVec = (expr_matrix))"
+"0","FPCA_pace <- FPCA(input_pace$Ly, input_pace$Lt)"
+"0",""
+"0","plot(FPCA_pace)"

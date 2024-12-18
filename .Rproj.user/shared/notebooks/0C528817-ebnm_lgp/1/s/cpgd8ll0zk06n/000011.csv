@@ -1,0 +1,3 @@
+"0","gp_setup_options <- EBMFSmooth::LGP_setup(t = t, p = 2, num_knots = 30, betaprec = 1e-3)"
+"0","ebnm_gp <- EBMFSmooth::ebnm_LGP_generator(LGP_setup = gp_setup_options)"
+"0","ebnm::ebnm_check_fn(ebnm_gp, x = x, s = s)"

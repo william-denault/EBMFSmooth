@@ -1,0 +1,2 @@
+"0","plot(F_gp_norm1 ~ c(1:50), type = ""l"", col = ""red"", lty = ""dashed"","
+"0","     ylim = c(min(f2_norm),max(f2_norm)), xlab = ""t"", ylab = ""factors"")"

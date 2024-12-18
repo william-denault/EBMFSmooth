@@ -1,0 +1,175 @@
+---
+title: "EBNM with LGP"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ebnm_lgp}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, warning=FALSE, message=FALSE}
+library(EBMFSmooth)
+library(flashier)
+library(TMB)
+library(Matrix)
+library(tidyverse)
+```
+
+
+## The new EBNM:
+
+We consider the following EBNM 
+
+\begin{equation}
+\begin{aligned}
+x_i | s_i, \theta(t_i) &\overset{ind}{\sim} N(\theta(t_i), s_i^2) \\
+\theta(t) &\sim g \in \mathcal{G}(\sigma).
+\end{aligned}
+\end{equation}
+
+Here $\mathcal{G}(\sigma)$ is a family of Gaussian processes (GP) parameterized by the smoothing parameter $\sigma$. 
+
+The only difference between this EBNM and the original EBNM is that $\boldsymbol{\theta} := [\theta(t_1), \theta(t_1), ..., \theta(t_n)]$ now follows a multivariate Gaussian distribution with a correlation structure specified by the GP, rather than having $iid$ elements.
+
+## A modular function
+
+Let's start with defining a modular function to solves the above EBNM problem with GP.
+
+For now, let's assume the family of GP is the $p$-th order Integrated Wiener process. 
+
+\begin{equation}
+L \theta(t) = \frac{\partial^p}{\partial t^p} \theta(t) = \sigma W(t),
+\end{equation}
+where $W(t)$ is the Gaussian white noise process. 
+This is an example of the L-GP family, defined by the differential operator $L = \frac{\partial^p}{\partial t^p}$.
+
+The function `EBMFSmooth::LGP_setup` will construct the basic quantities that are needed to define the GP (as well as its finite element approximation, which we won't go into details here).
+
+Then, the function `EBMFSmooth::ebnm_LGP_generator` will generate the EBNM function with the LGP specified by the `LGP_setup` object.
+
+### A quick illustration
+
+Let's see how to use these functions to solve a simple EBMN problem.
+
+First, we simulate some data:
+
+```{r, fig.height = 6, fig.width = 8}
+set.seed(123)
+n <- 100
+t <- seq(0, 4*pi, length = n)
+s <- c(rep(1.5,n/4), rep(0.5,n/4), rep(1,n/4), rep(2,n/4))
+f <- function(t) 2*sin(t)
+x <- f(t) + rnorm(n, 0, s)
+plot(t, x)
+```
+
+Now, we can use the `ebnm_LGP_generator` to generate the EBNM function, and use `ebnm_check_fn` from the package `ebnm` to check the function is working properly.
+
+```{r message=FALSE, warning=FALSE}
+gp_setup_options <- EBMFSmooth::LGP_setup(t = t, p = 2, num_knots = 30, betaprec = 1e-3)
+ebnm_gp <- EBMFSmooth::ebnm_LGP_generator(LGP_setup = gp_setup_options)
+ebnm::ebnm_check_fn(ebnm_gp, x = x, s = s)
+```
+
+
+
+Good! Now let's see the posterior quantities we get:
+
+```{r, fig.height = 6, fig.width = 8}
+try <- ebnm_gp(x = x, s = s)
+plot(t, try$posterior$mean, type = 'l', col = 'red',
+     ylim = range(c(try$posterior$mean - 2*sqrt(try$posterior$var), try$posterior$mean + 2*sqrt(try$posterior$var))),
+     xlab = "t", ylab = "f(t)")
+polygon(c(t, rev(t)), c(try$posterior$mean - 2*sqrt(try$posterior$var), rev(try$posterior$mean + 2*sqrt(try$posterior$var))), col = rgb(1,0,0,0.2), border = NA)
+lines(t, f(t), col = 'black', lty = 2)
+legend("topright", legend = c("True function", "Posterior mean"), col = c("black", "red"), lty = c(2, 1))
+```
+
+
+## Incorporating into the Flash
+
+Now let's try to incorporate this new EBNM into the framework of `flashier`.
+
+First, let's simulate some data from a "two-factors" model ($n = 1000$ and $P = 50$). 
+The two loading functions are $l_1(t) = \sin(t)$ and $l_2(t) = \cos(t)$, and the two factors are $f_1$ and $f_2$ with $P = 50$ elements each.
+For simplicity, we assume the error term $E_{ij}$ is iid Gaussian with a known variance $\sigma_E^2 = 1$.
+
+```{r}
+n <- 1000
+P <- 50
+K <- 2
+sigma_E <- 1
+set.seed(123)
+f1 <- rexp(P) * rbinom(P, 1, 0.3); f2 <- rexp(P) * rbinom(P, 1, 0.7)
+F_mat <- matrix(c(f1,f2), byrow = F, nrow = P, ncol = K)
+
+t_vec <- seq(0, 2*pi, length.out = n)
+l1 <- sin(t_vec); l2 <- cos(t_vec)
+
+l1_norm <- l1/sqrt(sum(l1^2)); l2_norm <- l2/sqrt(sum(l2^2))
+f1_norm <- f1*sqrt(sum(l1^2)); f2_norm <- f2*sqrt(sum(l2^2))
+
+L_mat <- matrix(c(l1,l2), byrow = F, nrow = n, ncol = K)
+E_mat <- matrix(rnorm(n*P, sd = sigma_E), nrow = n, ncol = P)
+Y <- L_mat %*% t(F_mat) + E_mat
+```
+
+Let's define the EBNM list and check if the new EBNM is working properly:
+
+```{r}
+ebnm_list <- list()
+settings <- EBMFSmooth::LGP_setup(t = t_vec, p = 2, num_knots = 30, betaprec = 1e-3)
+ebnm_list[[1]] <- EBMFSmooth::ebnm_LGP_generator(LGP_setup = settings)
+ebnm_list[[2]] <- flashier::flash_ebnm(
+  prior_family = "point_exponential"
+)
+ebnm_check_fn(ebnm_list[[1]], x = Y[,1], s = sigma_E)
+ebnm_list[[1]](x = Y[,1], s = sigma_E)
+```
+
+Seems like everything is working fine. Let's actually use it in `flashier`:
+
+```{r}
+ebnm_list <- list()
+ebnm_list[[1]] <- EBMFSmooth::ebnm_LGP_generator(LGP_setup  = settings)
+ebnm_list[[2]] <- flashier::flash_ebnm(
+  prior_family = "point_exponential"
+)
+system.time({
+  f.mod <- flashier::flash(data = (Y), S = (sigma_E),
+              ebnm_fn = ebnm_list,
+              greedy_Kmax = 2, var_type = 0,
+              backfit = T,
+              verbose = 3)
+})
+```
+
+```{r, fig.height = 6, fig.width = 8}
+L_gp_norm1 <- (f.mod$L_pm[,1])/sqrt(sum(f.mod$L_pm[,1]^2))
+L_gp_norm2 <- (f.mod$L_pm[,2])/sqrt(sum(f.mod$L_pm[,2]^2))
+
+F_gp_norm1 <- (f.mod$F_pm[,1]) * sqrt(sum(f.mod$L_pm[,1]^2))
+F_gp_norm2 <- (f.mod$F_pm[,2]) * sqrt(sum(f.mod$L_pm[,2]^2))
+
+par(mfrow = c(2,2))
+plot(L_gp_norm2 ~ t_vec, type = "l", col = "red", lty = "dashed",
+     ylim = c(min(l1_norm),max(l1_norm)), xlab = "t", ylab = "loadings")
+lines(l1_norm ~ t_vec, type = "l", xlab = "t", ylab = "loadings", lty = "solid")
+plot(L_gp_norm1 ~ t_vec, type = "l", col = "red", lty = "dashed",
+     ylim = c(min(l2_norm),max(l2_norm)), xlab = "t", ylab = "loadings")
+lines(l2_norm ~ t_vec, col = "black", lty = "solid")
+plot(F_gp_norm2 ~ c(1:50), type = "l", col = "red", lty = "dashed",
+     ylim = c(min(f1_norm),max(f1_norm)), xlab = "t", ylab = "factors")
+lines(f1_norm ~ c(1:50), type = "o", ylab = "factors", lty = "solid")
+plot(F_gp_norm1 ~ c(1:50), type = "l", col = "red", lty = "dashed",
+     ylim = c(min(f2_norm),max(f2_norm)), xlab = "t", ylab = "factors")
+lines(f2_norm ~ c(1:50), col = "black", lty = "solid", type = "o")
+par(mfrow = c(1,1))
+```

@@ -1,0 +1,193 @@
+---
+title: "EBNM with Matern"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ebnm_matern}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, warning=FALSE, message=FALSE}
+library(EBMFSmooth)
+library(flashier)
+library(INLA)
+library(Matrix)
+library(tidyverse)
+library(gridExtra)
+```
+
+## A Factor Analysis Model with Spatially-varying Factors
+
+Consider a matrix $Y_{ij}$ that denotes the gene expression collected for gene $i$ at location $s_j \in \mathbb{R}^2$.
+
+We assume there are $n = 50$ genes, each collected $P = 100$ locations. 
+
+Simulate the locations and expression modules:
+
+```{r}
+set.seed(1234)
+P <- (10)^2
+locations <- expand.grid(seq(0,1,length.out = sqrt(P)), seq(0,1,length.out = sqrt(P)))
+colnames(locations) <- c("x", "y")
+f <- function(x, y, center_x, center_y, scale) {
+  exp(-((x - center_x) ^ 2 + (y - center_y) ^ 2) / scale)
+}
+f1 <- f(locations[,1], locations[,2], center_x = 0.5, center_y = 0.4, scale = 0.2)
+f2 <- f(locations[,1], locations[,2], center_x = 0.2, center_y = 0.7, scale = 0.2)
+```
+
+
+Simulate the intensity in the expression modules:
+
+```{r, fig.height = 6, fig.width = 6}
+n <- 50
+l1 <- rexp(n, rate = 1) * rbinom(n, size = 1, prob = 0.4)
+l2 <- rexp(n, rate = 1) * rbinom(n, size = 1, prob = 0.7)
+
+sigma_E <- 0.1
+Y <- matrix(0, nrow = n, ncol = P)
+Y <- l1 %*% t(f1) + l2 %*% t(f2) + rnorm(n * P, mean = 0, sd = sigma_E)
+heatmap(Y, 
+        scale = "row",    # Normalize the gene expression data by row
+        Colv = NA,        # Don't cluster columns (genes)
+        Rowv = NA,        # Don't cluster rows (time points)
+        col = colorRampPalette(c("blue", "white", "red"))(50))  # Color gradient
+```
+
+
+## Implementation of EBMF through Flashier
+
+Now, implement the EBMF through `flashier`:
+
+```{r}
+ebnm_Matern <- EBMFSmooth::ebnm_Matern_generator(cbind(locations$x, locations$y))
+ebnm_list <- list()
+ebnm_list[[1]] <- flashier::flash_ebnm(
+    prior_family = "point_exponential"
+)
+ebnm_list[[2]] <- ebnm_Matern
+```
+
+```{r}
+# record the runtime:
+system.time({
+  f.mod = flashier::flash(data = (Y), S = (sigma_E), 
+                ebnm_fn = ebnm_list,
+                greedy_Kmax = 2, var_type = 0,
+                backfit = T, 
+                verbose = 3)
+})
+```
+
+Let's take a look at the fitted result:
+
+```{r, fig.height = 6, fig.width = 8}
+l1_norm <- l1/sqrt(sum(l1^2))
+l2_norm <- l2/sqrt(sum(l2^2))
+f1_norm <- f1*sqrt(sum(l1^2))
+f2_norm <- f2*sqrt(sum(l2^2))
+
+L_gp_norm1 <- (f.mod$L_pm[,1]) / sqrt(sum(f.mod$L_pm[,1]^2))
+L_gp_norm2 <- (f.mod$L_pm[,2]) / sqrt(sum(f.mod$L_pm[,2]^2))
+F_gp_norm1 <- (f.mod$F_pm[,1]) * sqrt(sum(f.mod$L_pm[,1]^2)) 
+F_gp_norm2 <- (f.mod$F_pm[,2]) * sqrt(sum(f.mod$L_pm[,2]^2))
+
+par(mfrow = c(2,2))
+plot(L_gp_norm1 ~ c(1:n), type = "l", col = "red", lty = "dashed",
+     ylim = c(min(l1_norm),max(l1_norm)), xlab = "index", ylab = "loadings")
+lines(l1_norm ~ c(1:n), type = "l", xlab = "index", ylab = "loadings", lty = "solid")
+plot(L_gp_norm2 ~ c(1:n), type = "l", col = "red", lty = "dashed",
+     ylim = c(min(l2_norm),max(l2_norm)), xlab = "index", ylab = "loadings")
+lines(l2_norm ~ c(1:n), col = "black", lty = "solid")
+plot(F_gp_norm1 ~ c(1:P), type = "l", col = "red", lty = "dashed",
+     ylim = c(min(f1_norm),max(f1_norm)), xlab = "index", ylab = "factors")
+lines(f1_norm ~ c(1:P), type = "o", ylab = "factors", lty = "solid")
+plot(F_gp_norm2 ~ c(1:P), type = "l", col = "red", lty = "dashed",
+     ylim = c(min(f2_norm),max(f2_norm)), xlab = "index", ylab = "factors")
+lines(f2_norm ~ c(1:P), col = "black", lty = "solid", type = "o")
+par(mfrow = c(1,1))
+
+# MSE: Normalized Factor
+mse_f <- (mean((f1_norm - F_gp_norm1)^2) + mean((f2_norm - F_gp_norm2)^2)) / 2
+mse_f
+# MSE: Normalized Loading
+mse_l <- (mean((l1_norm - L_gp_norm1)^2) + mean((l2_norm - L_gp_norm2)^2)) / 2
+mse_l
+```
+
+
+Plot the true spatial surface:
+
+```{r fig.height = 6, fig.width = 8, warning=FALSE, message=FALSE}
+grid_res <- 200
+fine_locations <- expand.grid(
+  x = seq(0, 1, length.out = grid_res),
+  y = seq(0, 1, length.out = grid_res)
+)
+
+# Evaluate f1 and f2 on the grid
+fine_locations$f1 <- f(fine_locations[,1], fine_locations[,2], center_x = 0.5, center_y = 0.4, scale = 0.2)
+fine_locations$f2 <- f(fine_locations[,1], fine_locations[,2], center_x = 0.2, center_y = 0.7, scale = 0.2)
+fine_locations$f1 <- fine_locations$f1 /max(fine_locations$f1)
+fine_locations$f2 <- fine_locations$f2 /max(fine_locations$f2)
+
+# Create the heatplots
+plot_f1 <- ggplot(fine_locations, aes(x = x, y = y, fill = f1)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = terrain.colors(10)) +
+  labs(title = "Heatmap of f1", x = "X Coordinate", y = "Y Coordinate", fill = "f1") + 
+  # remove the legend
+  theme(legend.position = "none") +
+  theme_classic()
+
+plot_f2 <- ggplot(fine_locations, aes(x = x, y = y, fill = f2)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = terrain.colors(10)) +
+  labs(title = "Heatmap of f2", x = "X Coordinate", y = "Y Coordinate", fill = "f2") +
+  theme_classic()
+
+library(akima)
+
+locations$fitted_f1 <- F_gp_norm1
+locations$fitted_f2 <- F_gp_norm2
+
+interp_f1 <- with(locations, interp(x, y, fitted_f1, duplicate = "mean"))
+interp_f2 <- with(locations, interp(x, y, fitted_f2, duplicate = "mean"))
+
+interp_f1_df <- data.frame(
+  x = rep(interp_f1$x, times = length(interp_f1$y)),
+  y = rep(interp_f1$y, each = length(interp_f1$x)),
+  fitted_f1 = as.vector(interp_f1$z)
+)
+interp_f2_df <- data.frame(
+  x = rep(interp_f2$x, times = length(interp_f2$y)),
+  y = rep(interp_f2$y, each = length(interp_f2$x)),
+  fitted_f2 = as.vector(interp_f2$z)
+)
+
+interp_f1_df$fitted_f1 <- interp_f1_df$fitted_f1 / max(na.omit(interp_f1_df$fitted_f1))
+interp_f2_df$fitted_f2 <- interp_f2_df$fitted_f2 / max(na.omit(interp_f2_df$fitted_f2))
+
+plot_f1_fitted <- ggplot(interp_f1_df, aes(x = x, y = y, fill = fitted_f1)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = terrain.colors(10)) +
+  labs(title = "Heatmap of fitted_f1", x = "X Coordinate", y = "Y Coordinate", fill = "f1") +
+  theme_classic()
+
+plot_f2_fitted <- ggplot(interp_f2_df, aes(x = x, y = y, fill = fitted_f2)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = terrain.colors(10)) +
+  labs(title = "Heatmap of fitted_f2", x = "X Coordinate", y = "Y Coordinate", fill = "f2") +
+  theme_classic()
+
+# Display the plots in 2x2 grid
+grid.arrange(plot_f1, plot_f2, plot_f1_fitted, plot_f2_fitted, ncol = 2)
+```

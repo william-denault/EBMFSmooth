@@ -1,0 +1,6 @@
+"0","ebnm_Matern <- EBMFSmooth::ebnm_Matern_generator(cbind(locations$x, locations$y))"
+"0","ebnm_list <- list()"
+"0","ebnm_list[[1]] <- flashier::flash_ebnm("
+"0","    prior_family = ""point_exponential"""
+"0",")"
+"0","ebnm_list[[2]] <- ebnm_Matern"

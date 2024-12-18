@@ -1,0 +1,206 @@
+---
+title: "Example of EBMFSmooth"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Iyer}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, warning=FALSE, message=FALSE}
+library(EBMFSmooth)
+library(fdapace)
+library(ggplot2)
+```
+
+In this vignette, we will show how to use the `EBMFSmooth` package to perform EBMF analysis on the `Iyer` dataset. 
+This dataset is a time-course gene expression dataset with 12 (unequally spaced) time points. 
+
+Before we apply the EBMF analysis, let's load the data and take a look at the first few rows of the dataset.
+
+```{r}
+head(EBMFSmooth::Iyer_expression)
+```
+
+
+Let's visualize some example genes from the dataset. 
+
+```{r, fig.width=6, fig.height=6}
+plot_expression <- function(i, data_frame) {
+  # Check if the index is within bounds
+  if (i < 1 || i > nrow(data_frame)) {
+    stop("Index out of bounds. Please provide a valid index.")
+  }
+
+  # Define actual time points corresponding to the column names
+  actual_time <- c(0, 15, 30, 60, 120, 240, 360, 480, 720, 960, 1200, 1440)/60  # Adjust if needed
+  if (length(actual_time) != (ncol(data_frame) - 4)) {
+    stop("Mismatch between time points and expression data columns.")
+  }
+
+  # Extract the expression data for the specified gene
+  gene_expression <- data_frame[i, 5:ncol(data_frame)]  # Assuming expression data starts at column 5
+
+  # Create a dataframe for plotting
+  plot_data <- data.frame(
+    Time = actual_time,
+    Expression = as.numeric(gene_expression)
+  )
+
+  # Add the gene name for the title
+  gene_name <- data_frame$`Gene name`[i]
+
+  # Generate the plot
+  ggplot(plot_data, aes(x = Time, y = Expression)) +
+    geom_line(color = "blue") +
+    geom_point(size = 1, color = "red") +
+    labs(
+      title = paste("Gene:", gene_name),
+      x = "Time (hours)",
+      y = "Rel (Log) Expression Level"
+    ) +
+    theme_minimal() +
+    theme(
+      title = element_text(size = 6),
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 10)
+    )
+}
+p1 <- plot_expression(1, Iyer_expression); p2 <- plot_expression(2, Iyer_expression)
+p3 <- plot_expression(3, Iyer_expression); p4 <- plot_expression(4, Iyer_expression)
+
+gridExtra::grid.arrange(p1, p2, p3, p4, nrow = 2)
+```
+
+
+First, let's apply Functional Principal Component Analysis (FPCA) to the gene expression data using the `fdapace` package.
+
+```{r}
+expr_matrix <- as.matrix(Iyer_expression[, 5:ncol(Iyer_expression)])
+time_points <- c(0, 15, 30, 60, 120, 240, 360, 480, 720, 960, 1200, 1440)/60
+```
+
+
+```{r, fig.width=6, fig.height=6, warning=FALSE, message=FALSE}
+N <- nrow(Iyer_expression)
+input_pace <- MakeFPCAInputs(tVec = time_points, yVec = (expr_matrix))
+FPCA_pace <- FPCA(input_pace$Ly, input_pace$Lt)
+
+plot(FPCA_pace)
+
+score_data_pace <- data.frame(
+  PC1 = FPCA_pace$xiEst[, 1],  # Scores for the first principal component
+  PC2 = FPCA_pace$xiEst[, 2],  # Scores for the second principal component
+  Gene = Iyer_expression$`Gene name`  # Add gene names for labeling (optional)
+)
+```
+
+There are three eigenfunctions estimated from the FPCA analysis. We could also visualize if there exists any clustering of the genes based on the first two principal components.
+
+```{r, fig.width=6, fig.height=6}
+# Scatter plot of the first two principal components
+ggplot(score_data_pace, aes(x = PC1, y = PC2)) +
+  geom_point(color = "blue", size = 0.5) +
+  # geom_text(aes(label = Gene), hjust = 0.5, vjust = -0.5, size = 0.5, check_overlap = TRUE) +
+  labs(
+    title = "FPCA Score Plot",
+    x = "First Principal Component (PC1)",
+    y = "Second Principal Component (PC2)"
+  ) +
+  theme_minimal()
+```
+
+
+By construction of the FPCA, the eigenfunctions are assumed to be orthogonal. 
+As a result, each gene is likely to be represented by quite varying weights on the eigenfunctions.
+This can be seen from the scatter plot of the first two principal components, where the genes are spread out across the plot.
+The interpretation of the FPCA scores therefore becomes more challenging.
+
+As a comparison, let's apply the EBMF analysis to the same dataset.
+We assume the factors are smooth functions of time and the loadings are non-negative vectors with a sparsity-inducing prior.
+
+```{r, warning=FALSE, message=FALSE}
+expr_matrix <- as.matrix(Iyer_expression[, 5:ncol(Iyer_expression)])
+# setup LGP
+ebnm_list <- list()
+ebnm_list[[1]] <- flashier::flash_ebnm(
+  prior_family = "point_exponential"
+)
+settings <- EBMFSmooth::LGP_setup(t = time_points[-1], p = 2, num_knots = 10, betaprec = 1e-5)
+ebnm_list[[2]] <- EBMFSmooth::ebnm_LGP_generator(LGP_setup  = settings)
+f.mod <- flashier::flash(
+  data = (expr_matrix[, -1]),
+  S = NULL,
+  ebnm_fn = ebnm_list,
+  greedy_Kmax = 3,
+  var_type = 1,
+  backfit = T,
+  verbose = 0
+)
+
+L_gp_norm <- sweep(f.mod$L_pm, 2, sqrt(colSums(f.mod$L_pm^2)), FUN = "/")
+F_gp_norm <- sweep(f.mod$F_pm, 2, sqrt(colSums(f.mod$L_pm^2)), FUN = "*")
+```
+
+
+```{r fig.width=6, fig.height=6}
+matplot(x = time_points[-1], y = F_gp_norm, type = "l", lty = "dashed", xlab = "Time", ylab = "Factors")
+```
+
+
+```{r fig.width=6, fig.height=6}
+# Visualization function for stacked bar plot of L_pm
+plot_L_pm <- function(L_pm, order = 1) {
+  # Validate the 'order' argument
+  if (!is.numeric(order) || order < 1 || order > ncol(L_pm)) {
+    stop("`order` must be a numeric value between 1 and the number of factors.")
+  }
+  
+  # Sort genes by their intensity in the specified factor
+  sorted_indices <- order(L_pm[, order], decreasing = TRUE)
+  L_pm_sorted <- L_pm[sorted_indices, ]
+  
+  # Convert to a data frame for ggplot
+  df <- as.data.frame(L_pm_sorted)
+  df$Gene <- factor(1:nrow(L_pm), levels = 1:nrow(L_pm))  # Gene IDs after sorting
+  df_long <- reshape2::melt(df, id.vars = "Gene", variable.name = "Factor", value.name = "Intensity")
+  ggplot(df_long, aes(x = Gene, y = Intensity, fill = Factor)) +
+    geom_bar(stat = "identity") +
+    scale_fill_brewer(palette = "Set3") +
+    theme_minimal() +
+    labs(
+      title = paste("Gene Intensity Across Factors (Sorted by Factor", order, ")"),
+      x = "Genes (Sorted by Intensity)",
+      y = "Intensity",
+      fill = "Factor"
+    ) +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid.major.x = element_blank())
+}
+plot_L_pm(L_gp_norm, order = 2)
+```
+
+```{r fig.width=6, fig.height=6}
+loading_data_ebmf <- data.frame(
+  L1 = f.mod$L_pm[,1],
+  L2 = f.mod$L_pm[,2],
+  Gene = Iyer_expression$`Gene name`
+)
+ggplot(loading_data_ebmf, aes(x = L1, y = L2)) +
+  geom_point(color = "blue", size = 0.5) +
+  # geom_text(aes(label = Gene), hjust = 0.5, vjust = -0.5, size = 0.5, check_overlap = TRUE) +
+  labs(
+    title = "EBMF Loading Plot",
+    x = "Loading 1",
+    y = "Loading 2"
+  ) +
+  theme_minimal()
+```
+

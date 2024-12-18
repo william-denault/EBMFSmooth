@@ -1,0 +1,2 @@
+"0","L_gp_norm <- sweep(f.mod$L_pm, 2, sqrt(colSums(f.mod$L_pm^2)), FUN = ""/"")"
+"0","F_gp_norm <- sweep(f.mod$F_pm, 2, sqrt(colSums(f.mod$L_pm^2)), FUN = ""*"")"

@@ -1,0 +1,1 @@
+"0","polygon(c(t, rev(t)), c(try$posterior$mean - 2*sqrt(try$posterior$var), rev(try$posterior$mean + 2*sqrt(try$posterior$var))), col = rgb(1,0,0,0.2), border = NA)"

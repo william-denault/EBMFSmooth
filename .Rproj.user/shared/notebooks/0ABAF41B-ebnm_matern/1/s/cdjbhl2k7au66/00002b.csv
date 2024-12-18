@@ -1,0 +1,1 @@
+"0","lines(f1_norm ~ c(1:P), type = ""o"", ylab = ""factors"", lty = ""solid"")"

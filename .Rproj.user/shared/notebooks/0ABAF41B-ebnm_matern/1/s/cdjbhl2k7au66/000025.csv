@@ -1,0 +1,2 @@
+"0","plot(L_gp_norm2 ~ c(1:n), type = ""l"", col = ""red"", lty = ""dashed"","
+"0","     ylim = c(min(l2_norm),max(l2_norm)), xlab = ""index"", ylab = ""loadings"")"

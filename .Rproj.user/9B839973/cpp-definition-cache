@@ -1,0 +1,36 @@
+[
+    {
+        "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/fit_theta.cpp",
+        "file_last_write": 1733114754.0,
+        "definitions": [
+            {
+                "usr": "c:@ST>1#T@objective_function@F@operator()#",
+                "kind": 7,
+                "parent_name": "objective_function<Type>",
+                "name": "operator()",
+                "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/fit_theta.cpp",
+                "line": 5,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_theta.cpp",
+        "file_last_write": 1733114772.0,
+        "definitions": [
+            {
+                "usr": "c:@ST>1#T@objective_function@F@operator()#",
+                "kind": 7,
+                "parent_name": "objective_function<Type>",
+                "name": "operator()",
+                "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_theta.cpp",
+                "line": 5,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    }
+]

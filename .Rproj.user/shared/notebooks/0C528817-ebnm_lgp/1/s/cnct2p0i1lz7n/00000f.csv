@@ -1,0 +1,4 @@
+"0","try <- ebnm_gp(x = x, s = s)"
+"0","plot(t, try$posterior$mean, type = 'l', col = 'red',"
+"0","     ylim = range(c(try$posterior$mean - 2*sqrt(try$posterior$var), try$posterior$mean + 2*sqrt(try$posterior$var))),"
+"0","     xlab = ""t"", ylab = ""f(t)"")"
