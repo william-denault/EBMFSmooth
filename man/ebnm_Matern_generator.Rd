@@ -6,7 +6,7 @@
 \usage{
 ebnm_Matern_generator(
   locations,
-  max.edge = 0.1,
+  max.edge = NULL,
   alpha = 2,
   range_prob = 0.05,
   sigma_prob = 0.05,
@@ -17,7 +17,7 @@ ebnm_Matern_generator(
 \arguments{
 \item{locations}{A matrix of spatial locations, where each row represents a coordinate.}
 
-\item{max.edge}{A numeric value defining the maximum edge length for the spatial mesh. Default is \code{0.1}.}
+\item{max.edge}{A numeric value defining the maximum edge length for the spatial mesh. Default is \code{NULL}.}
 
 \item{alpha}{A numeric value specifying the smoothness parameter of the Matern GP. Default is \code{2}.}
 

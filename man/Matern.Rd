@@ -4,7 +4,7 @@
 \alias{Matern}
 \title{Define the Matern GP Family}
 \usage{
-Matern()
+Matern(theta = NULL)
 }
 \value{
 An object of class `"Matern"`, representing a Matern process.

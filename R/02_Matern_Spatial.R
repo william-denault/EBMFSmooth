@@ -9,8 +9,8 @@
 #' print(matern_gp)
 #'
 #' @export
-Matern <- function () {
-  structure(data.frame(), class = "Matern")
+Matern <- function (theta = NULL) {
+  structure(list(theta = theta), class = "Matern")
 }
 
 
@@ -20,7 +20,7 @@ Matern <- function () {
 #' @description Creates a custom `ebnm` function for fitting data using Matern process.
 #'
 #' @param locations A matrix of spatial locations, where each row represents a coordinate.
-#' @param max.edge A numeric value defining the maximum edge length for the spatial mesh. Default is \code{0.1}.
+#' @param max.edge A numeric value defining the maximum edge length for the spatial mesh. Default is \code{NULL}.
 #' @param alpha A numeric value specifying the smoothness parameter of the Matern GP. Default is \code{2}.
 #' @param range_prob A numeric value specifying the prior probability for the range parameter. Default is \code{0.05}.
 #' @param sigma_prob A numeric value specifying the prior probability for the standard deviation parameter. Default is \code{0.05}.
@@ -51,7 +51,7 @@ Matern <- function () {
 #'
 #' @export
 ebnm_Matern_generator <- function(locations,
-                                  max.edge = 0.1,
+                                  max.edge = NULL,
                                   alpha = 2,
                                   range_prob = 0.05,
                                   sigma_prob = 0.05,
@@ -136,12 +136,13 @@ ebnm_Matern_generator <- function(locations,
     log_likelihood <- result$mlik[[1]]
 
     posterior_sampler <- function(n = n) {
+      warning("The posterior sampler is not implemented yet for Matern.")
       matrix(NA, nrow = n, ncol = length(x))
     }
 
     result <- list(
       posterior = posterior,
-      fitted_g = Matern(),
+      fitted_g = Matern(result$mode$theta),
       g_init = Matern(),
       log_likelihood = log_likelihood,
       posterior_sampler = posterior_sampler,
