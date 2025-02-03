@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/fit_theta.cpp",
-        "file_last_write": 1733114754.0,
+        "file_last_write": 1738530078.0,
         "definitions": [
             {
                 "usr": "c:@ST>1#T@objective_function@F@operator()#",
@@ -17,8 +17,42 @@
         "hidden": false
     },
     {
+        "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/fit_theta_beta.cpp",
+        "file_last_write": 1738533345.0,
+        "definitions": [
+            {
+                "usr": "c:@ST>1#T@objective_function@F@operator()#",
+                "kind": 7,
+                "parent_name": "objective_function<Type>",
+                "name": "operator()",
+                "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/fit_theta_beta.cpp",
+                "line": 5,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/fit_theta_beta_nn.cpp",
+        "file_last_write": 1738608753.0,
+        "definitions": [
+            {
+                "usr": "c:@ST>1#T@objective_function@F@operator()#",
+                "kind": 7,
+                "parent_name": "objective_function<Type>",
+                "name": "operator()",
+                "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/fit_theta_beta_nn.cpp",
+                "line": 5,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
         "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/fit_theta_nn.cpp",
-        "file_last_write": 1736799337.0,
+        "file_last_write": 1738530072.0,
         "definitions": [
             {
                 "usr": "c:@ST>1#T@objective_function@F@operator()#",
@@ -34,8 +68,42 @@
         "hidden": false
     },
     {
+        "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_beta.cpp",
+        "file_last_write": 1738608794.0,
+        "definitions": [
+            {
+                "usr": "c:@ST>1#T@objective_function@F@operator()#",
+                "kind": 7,
+                "parent_name": "objective_function<Type>",
+                "name": "operator()",
+                "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_beta.cpp",
+                "line": 5,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_beta_nn.cpp",
+        "file_last_write": 1738608812.0,
+        "definitions": [
+            {
+                "usr": "c:@ST>1#T@objective_function@F@operator()#",
+                "kind": 7,
+                "parent_name": "objective_function<Type>",
+                "name": "operator()",
+                "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_beta_nn.cpp",
+                "line": 5,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
         "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_theta.cpp",
-        "file_last_write": 1733114772.0,
+        "file_last_write": 1738529870.0,
         "definitions": [
             {
                 "usr": "c:@ST>1#T@objective_function@F@operator()#",
@@ -51,8 +119,42 @@
         "hidden": false
     },
     {
+        "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_theta_beta.cpp",
+        "file_last_write": 1738602926.0,
+        "definitions": [
+            {
+                "usr": "c:@ST>1#T@objective_function@F@operator()#",
+                "kind": 7,
+                "parent_name": "objective_function<Type>",
+                "name": "operator()",
+                "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_theta_beta.cpp",
+                "line": 5,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_theta_beta_nn.cpp",
+        "file_last_write": 1738608711.0,
+        "definitions": [
+            {
+                "usr": "c:@ST>1#T@objective_function@F@operator()#",
+                "kind": 7,
+                "parent_name": "objective_function<Type>",
+                "name": "operator()",
+                "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_theta_beta_nn.cpp",
+                "line": 5,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
         "file": "/Users/ziangzhang/Desktop/EBMF/EBMFSmooth/src/opt_theta_nn.cpp",
-        "file_last_write": 1736799352.0,
+        "file_last_write": 1738530075.0,
         "definitions": [
             {
                 "usr": "c:@ST>1#T@objective_function@F@operator()#",

@@ -13,7 +13,7 @@ LGP_setup(t, p = 2, num_knots = 30, betaprec = 0.001)
 
 \item{num_knots}{An integer specifying the number of knots for the spline basis. Default is 30.}
 
-\item{betaprec}{A numeric value specifying the prior precision for coefficients. Default is 1e-3.}
+\item{betaprec}{A numeric value specifying the prior precision for coefficients. Default is 1e-3. When `betaprec` is negative, the model will estimate the beta coefficients through EB.}
 }
 \value{
 A list containing:

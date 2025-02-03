@@ -54,15 +54,15 @@ Type objective_function<Type>::operator() ()
   if(sigmaIWP != 0){
     Type logdet1 = d * (-2*log(sigmaIWP)) + logPdet;
     lpW += 0.5 * logdet1; // P part
+    // wrt the dimension
+    lpW += -0.5 * d * log(2*M_PI);
   }
-  Type logdet2 = d_beta * log(betaprec);
-  lpW += 0.5 * logdet2; // for fixed effect
-
-
-  // wrt the dimension
-  lpW += -0.5 * d * log(2*M_PI);
-  lpW += -0.5 * d_beta * log(2*M_PI);
-
+  if (betaprec != 0){
+    Type logdet2 = d_beta * log(betaprec);
+    lpW += 0.5 * logdet2; // for fixed effect
+    // wrt the dimension
+    lpW += -0.5 * d_beta * log(2*M_PI);
+  }
 
   REPORT(lpW);
 

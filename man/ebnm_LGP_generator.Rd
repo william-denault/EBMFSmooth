@@ -4,10 +4,12 @@
 \alias{ebnm_LGP_generator}
 \title{Generate a Custom `ebnm` Function for L-GP Smoothing}
 \usage{
-ebnm_LGP_generator(LGP_setup)
+ebnm_LGP_generator(LGP_setup, link = "identity")
 }
 \arguments{
 \item{LGP_setup}{A list of precomputed matrices and related quantities (e.g., from \code{LGP_setup}) required for L-GP smoothing.}
+
+\item{link}{A character string specifying the link function to use. Default is \code{"identity"}.}
 }
 \value{
 A function that performs L-GP smoothing with:

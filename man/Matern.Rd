@@ -6,11 +6,18 @@
 \usage{
 Matern(theta = NULL)
 }
+\arguments{
+\item{theta}{A numeric value representing the log-transformed range parameter
+(optional). Defaults to \code{NULL}.}
+}
 \value{
-An object of class `"Matern"`, representing a Matern process.
+An object of class \code{"Matern"}, representing a Matern process with the
+specified parameters.
 }
 \description{
-Creates an object representing the Matern process.
+Creates an object representing the Matern process. The Matern process
+is parameterized by a log-transformed range parameter, \code{theta}, which defines
+the spatial correlation scale.
 }
 \examples{
 matern_gp <- Matern()

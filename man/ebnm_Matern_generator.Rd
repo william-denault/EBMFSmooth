@@ -8,43 +8,59 @@ ebnm_Matern_generator(
   locations,
   max.edge = NULL,
   alpha = 2,
-  range_prob = 0.05,
-  sigma_prob = 0.05,
-  range_val = 2,
-  sigma_val = 2
+  suppress_warnings = TRUE,
+  penalty_range = NULL,
+  link = "identity"
 )
 }
 \arguments{
-\item{locations}{A matrix of spatial locations, where each row represents a coordinate.}
+\item{locations}{A matrix of spatial locations, where each row represents a
+coordinate.}
 
-\item{max.edge}{A numeric value defining the maximum edge length for the spatial mesh. Default is \code{NULL}.}
+\item{max.edge}{A numeric value defining the maximum edge length for the spatial
+mesh. If \code{NULL}, the default mesh construction is used.}
 
-\item{alpha}{A numeric value specifying the smoothness parameter of the Matern GP. Default is \code{2}.}
+\item{alpha}{A numeric value specifying the smoothness parameter of the Matern GP.
+Higher values result in smoother processes. Defaults to \code{2}.}
 
-\item{range_prob}{A numeric value specifying the prior probability for the range parameter. Default is \code{0.05}.}
+\item{suppress_warnings}{A logical value. If \code{TRUE}, suppresses warnings
+generated during INLA optimization. Defaults to \code{TRUE}.}
 
-\item{sigma_prob}{A numeric value specifying the prior probability for the standard deviation parameter. Default is \code{0.05}.}
-
-\item{range_val}{A numeric value specifying the prior mean for the range parameter. Default is \code{2}.}
-
-\item{sigma_val}{A numeric value specifying the prior mean for the standard deviation parameter. Default is \code{2}.}
+\item{penalty_range}{A numeric value specifying the prior median of the range parameter.
+If \code{NULL}, a default is computed based on the spatial extent of the \code{locations}.}
 }
 \value{
-A function that can be used to fit data using the Matern process The returned function includes:
+A function that can be used to fit data using the Matern GP model. The
+returned function includes:
 \itemize{
-  \item \code{posterior}: A data frame of posterior mean, variance, and second moments.
+  \item \code{posterior}: A data frame containing posterior mean, variance, and
+  second moments.
   \item \code{fitted_g}: The fitted Matern object.
+  \item \code{g_init}: The initial Matern object before optimization.
   \item \code{log_likelihood}: The marginal log-likelihood of the model.
   \item \code{posterior_spatial_field}: Summary of the spatial random field.
   \item \code{mesh}: The spatial mesh used in the model.
-  \item \code{inla_result}: The full result object from \code{INLA::inla()}.
+  \item \code{inla_result}: The full result object returned by \code{INLA::inla()}.
 }
 }
 \description{
-Creates a custom `ebnm` function for fitting data using Matern process.
+This function generates a custom \code{ebnm} function for fitting data
+using the Matern Gaussian process (GP). The Matern GP is optimized using empirical
+Bayes methods via INLA, with options for customizing priors and smoothing penalties.
+}
+\details{
+The function first constructs a spatial mesh using \code{INLA::inla.mesh.2d} and
+initializes the Matern GP parameters. If \code{fix_g = FALSE}, the function optimizes
+the Matern GP parameters (range and intercept) using INLA's
+internal methods.
+
+Warnings can be suppressed using the \code{suppress_warnings} parameter. The
+\code{penalty_range} parameter can be used to set the initial range for the Matern
+GP prior, which defaults to one-tenth of the smallest spatial dimension.
 }
 \examples{
 # Example usage of the Matern GP model
+set.seed(123)
 locations <- matrix(runif(20), ncol = 2)  # Random 2D locations
 matern_model <- ebnm_Matern_generator(locations = locations)
 
